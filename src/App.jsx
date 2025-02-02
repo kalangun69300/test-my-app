@@ -45,7 +45,7 @@ function App() {
             <button style={buttonStyle}>Order</button>
           </li>
           <li style={{ padding: "10px", borderBottom: "1px solid #ddd", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>Noodles - 45 THB</span>
+            <span>Noodles - 50 THB</span>
             <button style={buttonStyle}>Order</button>
           </li>
           <li style={{ padding: "10px", borderBottom: "1px solid #ddd", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
