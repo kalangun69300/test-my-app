@@ -16,8 +16,18 @@ jobs:
       - name: Set up JDK 11 (Sonar Scanner ต้องการ Java)
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
+          distribution: 'temurin' # ใช้ Temurin JDK
           java-version: '11'
+
+      - name: Verify Java installation
+        run: |
+          java -version
+          echo "JAVA_HOME=$JAVA_HOME"
+
+      - name: Set JAVA_HOME
+        run: |
+          echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
+          echo "PATH=$JAVA_HOME/bin:$PATH" >> $GITHUB_ENV
 
       - name: Install required dependencies
         run: sudo apt-get update && sudo apt-get install -y libarchive-tools
@@ -25,11 +35,12 @@ jobs:
       - name: Install SonarScanner
         run: |
           wget -qO- "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip" | bsdtar -xvf - -C /opt
-          chmod +x /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner  # ให้สิทธิ์ Execute
+          chmod +x /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner
           echo "/opt/sonar-scanner-5.0.1.3006-linux/bin" >> $GITHUB_PATH
 
-      - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
+      - name: Verify SonarScanner
+        run: |
+          /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner -h
 
       - name: Run SonarQube Scan
         run: |
