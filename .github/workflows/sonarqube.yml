@@ -19,15 +19,18 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
+      - name: Install required dependencies
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools
+
       - name: Install SonarScanner
         run: |
-          wget -qO- "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip" | bsdtar -xvf- -C /opt
+          wget -qO- "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip" | bsdtar -xvf - -C /opt
           echo "/opt/sonar-scanner-5.0.1.3006-linux/bin" >> $GITHUB_PATH
 
       - name: Run SonarQube Scan
         run: |
           sonar-scanner \
-            -Dsonar.projectKey=my-project \
+            -Dsonar.projectKey=YOUR_PROJECT_KEY \
             -Dsonar.sources=. \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.host.url=YOUR_SONARQUBE_SERVER \
+            -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
