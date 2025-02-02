@@ -1,51 +1,35 @@
-name: SonarQube Scan
+name: CI/CD workflow for SonarQube Scan (Node.js)
 
 on:
   push:
     branches:
-      - main  # ทำงานเมื่อมีการพุชไปที่ main
+      - main
 
 jobs:
-  sonarqube:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Set up JDK 11 (Sonar Scanner ต้องการ Java)
-        uses: actions/setup-java@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          distribution: 'temurin' # ใช้ Temurin JDK
-          java-version: '11'
+          node-version: 18
 
-      - name: Verify Java installation
-        run: |
-          java -version
-          echo "JAVA_HOME=$JAVA_HOME"
-
-      - name: Set JAVA_HOME
-        run: |
-          echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
-          echo "PATH=$JAVA_HOME/bin:$PATH" >> $GITHUB_ENV
-
-      - name: Install required dependencies
-        run: sudo apt-get update && sudo apt-get install -y libarchive-tools
-
-      - name: Install SonarScanner
-        run: |
-          wget -qO- "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip" | bsdtar -xvf - -C /opt
-          chmod +x /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner
-          echo "/opt/sonar-scanner-5.0.1.3006-linux/bin" >> $GITHUB_PATH
-
-      - name: Verify SonarScanner
-        run: |
-          /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner -h
+      - name: Install dependencies
+        run: npm install
 
       - name: Run SonarQube Scan
-        run: |
-          sonar-scanner \
-            -Dsonar.projectKey=YOUR_PROJECT_KEY \
-            -Dsonar.sources=. \
-            -Dsonar.host.url=YOUR_SONARQUBE_SERVER \
-            -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
+        uses: sonarsource/sonarqube-scan-action@v1
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.organization=my-org
+            -Dsonar.projectKey=my-nodejs-app
+            -Dsonar.sources=src
+            -Dsonar.language=js
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
