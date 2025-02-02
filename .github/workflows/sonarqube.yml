@@ -25,6 +25,7 @@ jobs:
       - name: Install SonarScanner
         run: |
           wget -qO- "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip" | bsdtar -xvf - -C /opt
+          chmod +x /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner  # ให้สิทธิ์ Execute
           echo "/opt/sonar-scanner-5.0.1.3006-linux/bin" >> $GITHUB_PATH
 
       - name: Run SonarQube Scan
