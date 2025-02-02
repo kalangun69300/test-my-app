@@ -16,7 +16,7 @@ jobs:
       - name: Get Auto Version
         id: version
         run: |
-          VERSION="v$(git rev-list --count HEAD).0"  # นับจำนวน commit แล้วใช้เป็น version
+          VERSION="v${{ github.run_number }}.0"  # ใช้ run_number ที่เพิ่มขึ้นทุกครั้ง
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Next version: $VERSION"
 
@@ -31,5 +31,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
-
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
