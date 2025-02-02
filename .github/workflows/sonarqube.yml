@@ -8,28 +8,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    services:
+      sonarqube:
+        image: sonarqube:latest
+        ports:
+          - 9000:9000
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm install
+      - name: Wait for SonarQube to start
+        run: sleep 30  # รอให้ SonarQube รันขึ้นมา
 
       - name: Run SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v1
-        with:
-          projectBaseDir: .
-          args: >
-            -Dsonar.organization=my-org
-            -Dsonar.projectKey=my-nodejs-app
-            -Dsonar.sources=src
-            -Dsonar.language=js
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: "http://localhost:9000"
+        run: |
+          sonar-scanner -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=${SONAR_TOKEN}
