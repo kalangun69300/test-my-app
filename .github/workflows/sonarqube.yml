@@ -28,6 +28,9 @@ jobs:
           chmod +x /opt/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner  # ให้สิทธิ์ Execute
           echo "/opt/sonar-scanner-5.0.1.3006-linux/bin" >> $GITHUB_PATH
 
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
+
       - name: Run SonarQube Scan
         run: |
           sonar-scanner \
