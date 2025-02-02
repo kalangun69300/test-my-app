@@ -33,3 +33,4 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
