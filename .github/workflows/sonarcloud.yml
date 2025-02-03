@@ -19,6 +19,13 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
 
+      - name: Install SonarScanner
+        run: |
+          curl -LsS https://downloads.sonarsource.com/sonarqube/sonar-scanner-cli.zip -o sonar-scanner.zip
+          unzip sonar-scanner.zip
+          mv sonar-scanner-* sonar-scanner
+          echo "$PWD/sonar-scanner/bin" >> $GITHUB_PATH
+
       - name: Run SonarCloud Scan
         run: |
           sonar-scanner \
