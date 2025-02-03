@@ -1,4 +1,13 @@
 function App() {
+
+  // 🚨 Security Issue: ใช้ eval() (ถือว่าอันตราย)
+  const unsafeFunction = () => {
+    eval("console.log('This is unsafe code!')"); // SonarCloud จะเตือนเรื่อง Security Vulnerability
+  };
+
+  // 🚨 Security Issue: ใช้ dangerouslySetInnerHTML (เสี่ยงต่อ XSS)
+  const dangerousHTML = { __html: "<h3 style='color: red;'>Warning: This is dangerous!</h3>" };
+
   return (
     <div style={{ 
       display: "flex", 
@@ -42,7 +51,7 @@ function App() {
         <ul style={{ listStyle: "none", padding: "0", fontSize: "18px" }}>
           <li style={{ padding: "10px", borderBottom: "1px solid #ddd", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>Fried Rice - 50 THB</span>
-            <button style={buttonStyle}>Order</button>
+            <button style={buttonStyle} onClick={unsafeFunction}>Order</button>
           </li>
           <li style={{ padding: "10px", borderBottom: "1px solid #ddd", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>Noodles - 50 THB</span>
@@ -58,6 +67,9 @@ function App() {
           </li>
         </ul>
       </div>
+
+      {/* 🚨 Security Issue: แสดง HTML แบบไม่มีการป้องกัน */}
+      <div dangerouslySetInnerHTML={dangerousHTML}></div>
     </div>
   );
 }
