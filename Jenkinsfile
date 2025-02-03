@@ -5,21 +5,21 @@ pipeline {
         SONARQUBE_URL = 'http://localhost:9000/'  // SonarQube server URL
     }
 
+    stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'adc8eea2-9ab6-4d68-b4bd-dfc080531a52', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    // Login to Docker Hub
+                    sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                }
+            }
+        }
+
     stages {
         stage('Pull Docker Image') {
             steps {
                 script {
                     // ดึง Docker image จาก Docker Hub
                     sh "docker pull kalangun/test-my-app:latest"
-                }
-            }
-        }
-
-        stage('Login to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'adc8eea2-9ab6-4d68-b4bd-dfc080531a52', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    // Login to Docker Hub
-                    sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
                 }
             }
         }
