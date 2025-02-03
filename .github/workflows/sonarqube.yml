@@ -1,4 +1,4 @@
-name: SonarQube Scan
+name: SonarCloud Analysis
 
 on:
   push:
@@ -6,29 +6,24 @@ on:
       - main
 
 jobs:
-  sonar:
+  sonarcloud:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install SonarScanner
-        run: |
-          curl -LsS https://downloads.sonarsource.com/sonarqube/sonar-scanner-cli.zip -o sonar-scanner.zip
-          unzip sonar-scanner.zip
-          mv sonar-scanner-* sonar-scanner
-          echo "${GITHUB_WORKSPACE}/sonar-scanner/bin" >> $GITHUB_PATH
+      - name: Install Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '11'
 
-      - name: Verify SonarScanner
-        run: sonar-scanner -h
-
-      - name: Run SonarQube Scan
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      - name: Run SonarCloud Scan
         run: |
           sonar-scanner \
-            -Dsonar.projectKey=my-project \
+            -Dsonar.organization=kalangun \
+            -Dsonar.projectKey=kalangun_test-my-app \
             -Dsonar.sources=. \
-            -Dsonar.host.url=${SONAR_HOST_URL} \
-            -Dsonar.login=${SONAR_TOKEN}
+            -Dsonar.host.url="https://sonarcloud.io" \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
