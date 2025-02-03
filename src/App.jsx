@@ -1,15 +1,5 @@
 function App() {
-
-  // Code Smell
-  /*
-  function unusedFunction() {
-    console.log("This function is never used!");
-  }
-  */
-
-  // Code Smell
-  // const fakeCode = "This is commented out but not removed";
-
+  
   return (
     <div style={{ 
       display: "flex", 
