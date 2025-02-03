@@ -1,0 +1,51 @@
+name: trivy-container-scan
+
+on:
+  push:
+    branches: [ "main" ]  # รันเมื่อมีการ Push ไปที่ main
+  pull_request:
+    branches: [ "main" ]  # รันเมื่อมี PR ไปที่ main
+  schedule:
+    - cron: '22 3 * * 1'  # รันอัตโนมัติทุกวันจันทร์ 03:22 UTC (ยังคงไว้)
+
+permissions:
+  contents: read
+  security-events: write  # ให้สิทธิ์อัปโหลดผลไปยัง GitHub Security Tab
+
+jobs:
+  security_scan:
+    name: Scan Docker Image & Running Container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          docker build -t kalangun69300/test-my-app:${{ github.sha }} .
+      
+      - name: Run Docker Container
+        run: |
+          docker run -d --name test-my-app-container kalangun69300/test-my-app:${{ github.sha }}
+
+      - name: Run Trivy to Scan Docker Image
+        uses: aquasecurity/trivy-action@0.15.0
+        with:
+          image-ref: 'kalangun69300/test-my-app:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy Image Scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+
+      - name: Run Trivy to Scan Running Container
+        run: |
+          trivy --quiet --format sarif --severity CRITICAL,HIGH container test-my-app-container > trivy-container-results.sarif
+
+      - name: Upload Trivy Container Scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-container-results.sarif'
