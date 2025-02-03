@@ -19,18 +19,13 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
 
-      - name: Install SonarScanner
-        run: |
-          curl -LsS https://downloads.sonarsource.com/sonarqube/sonar-scanner-cli.zip -o sonar-scanner.zip
-          unzip sonar-scanner.zip
-          mv sonar-scanner-* sonar-scanner
-          echo "$PWD/sonar-scanner/bin" >> $GITHUB_PATH
-
       - name: Run SonarCloud Scan
-        run: |
-          sonar-scanner \
-            -Dsonar.organization=kalangun \
-            -Dsonar.projectKey=kalangun_test-my-app \
-            -Dsonar.sources=. \
-            -Dsonar.host.url="https://sonarcloud.io" \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=kalangun
+            -Dsonar.projectKey=kalangun_test-my-app
+            -Dsonar.sources=.
+            -Dsonar.host.url="https://sonarcloud.io"
