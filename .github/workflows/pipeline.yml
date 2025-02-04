@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  security-events: write  #ให้สิทธิ์อัปโหลดผลไปยัง GitHub Security Tab
+
 jobs:
   sonarcloud:
     name: SonarCloud Analysis
