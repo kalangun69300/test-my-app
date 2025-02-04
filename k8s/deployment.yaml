@@ -23,6 +23,7 @@ spec:
       containers:
       - name: myapp
         image: kalangun/test-my-app:latest
+        imagePullPolicy: Always
         resources:
           limits:
             memory: "128Mi"
