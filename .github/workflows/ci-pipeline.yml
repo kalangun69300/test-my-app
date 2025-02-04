@@ -55,18 +55,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Get Auto Version
-        id: version
-        run: |
-          VERSION="v${{ github.run_number }}.0"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Next version: $VERSION"
-
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }} .
-          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }} ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
-
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest .
+      
   security_scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
@@ -79,7 +71,7 @@ jobs:
       - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
         with:
-          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}'
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest'  # ✅ ใช้ latest
           format: 'sarif'
           output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -106,5 +98,4 @@ jobs:
 
       - name: Push Docker Image to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  # ✅ ใช้ latest
