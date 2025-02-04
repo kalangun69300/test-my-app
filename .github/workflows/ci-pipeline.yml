@@ -101,7 +101,7 @@ jobs:
   deploy:
     name: Deploy to Kubernetes
     runs-on: ubuntu-latest
-    needs: build  # รอให้ Image ถูก Build ก่อน
+    needs: security_scan  # รอให้ Image ถูก Build ก่อน
 
     steps:
       - name: Checkout Code
