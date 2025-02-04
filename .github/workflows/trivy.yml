@@ -5,8 +5,6 @@ on:
     branches: [ "main" ]  # รันเมื่อมีการ Push ไปที่ main
   pull_request:
     branches: [ "main" ]  # รันเมื่อมี PR ไปที่ main
-  schedule:
-    - cron: '22 3 * * 1'  # รันอัตโนมัติทุกวันจันทร์ 03:22 UTC
 
 permissions:
   contents: read
@@ -40,20 +38,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-image-results.sarif'
-
-      - name: Install Trivy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget
-          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_Linux-64bit.tar.gz
-          tar zxvf trivy_Linux-64bit.tar.gz
-          sudo mv trivy /usr/local/bin/
-
-      - name: Run Trivy to Scan Running Container
-        run: |
-          trivy --quiet --format sarif --severity CRITICAL,HIGH container test-my-app-container > trivy-container-results.sarif
-
-      - name: Upload Trivy Container Scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-container-results.sarif'
