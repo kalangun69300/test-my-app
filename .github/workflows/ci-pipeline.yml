@@ -47,25 +47,33 @@ jobs:
             -Dsonar.token="${{ secrets.SONAR_TOKEN }}"
 
   build:
-    name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: sast_scan  # รอให้ SonarCloud สแกนเสร็จก่อน
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Get Auto Version
         id: version
         run: |
-          VERSION="v${{ github.run_number }}.0"
+          VERSION="v${{ github.run_number }}.0"  # ใช้ run_number ที่เพิ่มขึ้นทุกครั้ง
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Next version: $VERSION"
 
-      - name: Build Docker Image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }} .
-          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }} ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
 
   security_scan:
     name: Trivy Security Scan
@@ -88,23 +96,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-image-results.sarif'
-
-  push:
-    name: Push to Docker Hub
-    runs-on: ubuntu-latest
-    needs: security_scan  # รอให้ Trivy Scan เสร็จก่อน
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - name: Push Docker Image to Docker Hub
-        run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
