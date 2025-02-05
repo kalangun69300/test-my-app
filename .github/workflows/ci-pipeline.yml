@@ -41,11 +41,10 @@ jobs:
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: sast_scan  # ✅ รอให้ SonarCloud สแกนเสร็จก่อน
+    needs: sast_scan
 
     outputs:
-      image_file: image.tar  # ✅ ส่งออกไฟล์ Image เพื่อใช้ข้าม Jobs
-      version: ${{ steps.version.outputs.VERSION }}  # ✅ ส่งเลขเวอร์ชันให้ Job อื่นใช้
+      version: ${{ steps.version.outputs.VERSION }}
 
     steps:
       - name: Checkout Code
@@ -54,45 +53,51 @@ jobs:
       - name: Get Auto Version
         id: version
         run: |
-          VERSION="v${{ github.run_number }}.0"  # ใช้ run_number ที่เพิ่มขึ้นทุกครั้ง
+          VERSION="v${{ github.run_number }}.0"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT  # ✅ ส่งค่าออกเป็น output
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Next version: $VERSION"
 
       - name: Build Docker Image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest .
           docker tag ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
-          docker save -o image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  # ✅ บันทึก Image ไว้
-          docker save -o image-${{ env.VERSION }}.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
+          docker save -o /tmp/image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
+          docker save -o /tmp/image-${{ env.VERSION }}.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
+
+      - name: Debug - List Files Before Upload
+        run: ls -lah /tmp
 
       - name: Upload Docker Image Artifact
-        uses: actions/upload-artifact@v4  # ✅ ใช้ v4
+        uses: actions/upload-artifact@v4
         with:
           name: docker-image
-          path: image.tar
+          path: /tmp/image.tar
 
       - name: Upload Docker Image Artifact (Versioned)
-        uses: actions/upload-artifact@v4  # ✅ อัปโหลดไฟล์ที่มีเลขเวอร์ชัน
+        uses: actions/upload-artifact@v4
         with:
           name: docker-image-versioned
-          path: image-${{ env.VERSION }}.tar
+          path: /tmp/image-${{ env.VERSION }}.tar
 
   security_scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
-    needs: build  # ✅ รอให้ Docker Image Build เสร็จก่อน
+    needs: build
 
     steps:
       - name: Download Docker Image Artifact
         uses: actions/download-artifact@v4
         with:
           name: docker-image
-          path: .
+          path: /tmp
+
+      - name: Debug - List Files After Download
+        run: ls -lah /tmp
 
       - name: Load Docker Image
         run: |
-          docker load -i image.tar  # ✅ โหลด Image ที่ถูก Build มาใช้
+          docker load -i /tmp/image.tar
 
       - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
@@ -110,25 +115,28 @@ jobs:
   push_image:
     name: Push Docker Image to Docker Hub
     runs-on: ubuntu-latest
-    needs: security_scan  # ✅ รอให้ Trivy Scan เสร็จก่อนแล้วค่อย Push
+    needs: security_scan
 
     steps:
       - name: Download Docker Image Artifact
         uses: actions/download-artifact@v4
         with:
           name: docker-image
-          path: .
+          path: /tmp
 
       - name: Download Docker Image Artifact (Versioned)
         uses: actions/download-artifact@v4
         with:
           name: docker-image-versioned
-          path: .
+          path: /tmp
+
+      - name: Debug - List Files After Download
+        run: ls -lah /tmp
 
       - name: Load Docker Images
         run: |
-          docker load -i image.tar  # ✅ โหลด Image ที่ถูกสแกน
-          docker load -i image-${{ needs.build.outputs.version }}.tar
+          docker load -i /tmp/image.tar
+          docker load -i /tmp/image-${{ needs.build.outputs.version }}.tar
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
