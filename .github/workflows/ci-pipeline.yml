@@ -55,28 +55,12 @@ jobs:
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest .
           docker save -o image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  # ✅ บันทึก Image ไว้
 
-      - name: Upload Docker Image Artifact
-        uses: actions/upload-artifact@v4  # ✅ เปลี่ยนเป็น v4
-        with:
-          name: docker-image
-          path: image.tar
-
   security_scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
     needs: build  # ✅ รอให้ Docker Image Build เสร็จก่อน
 
     steps:
-      - name: Download Docker Image Artifact
-        uses: actions/download-artifact@v4  # ✅ เปลี่ยนเป็น v4
-        with:
-          name: docker-image
-          path: .
-
-      - name: Load Docker Image
-        run: |
-          docker load -i image.tar  # ✅ โหลด Image ที่ถูก Build มาใช้
-
       - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
         with:
@@ -96,12 +80,6 @@ jobs:
     needs: security_scan  # ✅ รอให้ Trivy Scan เสร็จก่อนแล้วค่อย Push
 
     steps:
-      - name: Download Docker Image Artifact
-        uses: actions/download-artifact@v4  # ✅ เปลี่ยนเป็น v4
-        with:
-          name: docker-image
-          path: .
-
       - name: Load Docker Image
         run: |
           docker load -i image.tar  # ✅ โหลด Image ที่ถูกสแกน
