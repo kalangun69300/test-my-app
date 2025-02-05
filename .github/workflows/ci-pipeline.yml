@@ -1,4 +1,4 @@
-name: CI Pipeline (SAST, Docker Build, Trivy Scan, Push to Docker Hub, Deploy to Kubernetes)
+name: CI Pipeline
 
 on:
   push:
