@@ -10,14 +10,6 @@ function App() {
       backgroundColor: "#f8f9fa" 
     }}>
 
-      {/* test sonar*/}
-      {/* const API_KEY = "12345-abcdef-67890"; */}
-
-
-      {/* test sonar 2 */}
-      {/* let userInput = "console.log('Injected Code!')"; */}
-      {/* eval(userInput); */}
-      
       {/* Navbar */}
       <nav style={{ 
         width: "100%", 
@@ -34,7 +26,7 @@ function App() {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "24px", cursor: "pointer" }}>☰</span>
-          <span>MAI A ROI</span>
+          <span>For Real Not Delicious Restaurant</span>
         </div>
       </nav>
 
