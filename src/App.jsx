@@ -10,11 +10,23 @@ function App() {
       backgroundColor: "#f8f9fa" 
     }}>
 
-      {/* test sonar */}
+      {/* 🔴 1. Unused HTML Element (Dead Code) */}
       {/* <div>
         <p style={{ color: "red" }}>This is old content that is not used anymore.</p>
       </div> */}
-      
+
+      {/* 🔴 2. Hardcoded Credentials (Security Issue) */}
+      {/* const API_KEY = "12345-abcdef-67890"; */}
+
+      {/* 🔴 3. Inline JavaScript Execution (Potential XSS) */}
+      {/* <script>
+        alert("This script should not be here!");
+      </script> */}
+
+      {/* 🔴 4. Use of `eval()` (Security Risk) */}
+      {/* let userInput = "console.log('Injected Code!')"; */}
+      {/* eval(userInput); */}
+
       {/* Navbar */}
       <nav style={{ 
         width: "100%", 
