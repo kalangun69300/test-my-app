@@ -41,113 +41,70 @@ jobs:
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: sast_scan
+    needs: sast_scan  # ✅ รอให้ SonarCloud สแกนเสร็จก่อน
 
     outputs:
-      version: ${{ steps.version.outputs.VERSION }}
+      image_file: image.tar  # ✅ ส่งออกไฟล์ Image เพื่อใช้ข้าม Jobs
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Get Auto Version
-        id: version
-        run: |
-          VERSION="v${{ github.run_number }}.0"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Next version: $VERSION"
-
       - name: Build Docker Image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest .
-          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
-          docker save -o image-latest.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
-          docker save -o image-${{ env.VERSION }}.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
+          docker save -o image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  # ✅ บันทึก Image ไว้
 
-      - name: Upload Docker Image Artifact (latest)
-        uses: actions/upload-artifact@v4
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4  # ✅ เปลี่ยนเป็น v4
         with:
-          name: docker-image-latest
-          path: image-latest.tar
-
-      - name: Upload Docker Image Artifact (versioned)
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image-versioned
-          path: image-${{ env.VERSION }}.tar
+          name: docker-image
+          path: image.tar
 
   security_scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
-    needs: build
+    needs: build  # ✅ รอให้ Docker Image Build เสร็จก่อน
 
     steps:
-      - name: Download Docker Image Artifact (latest)
-        uses: actions/download-artifact@v4
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4  # ✅ เปลี่ยนเป็น v4
         with:
-          name: docker-image-latest
+          name: docker-image
           path: .
 
-      - name: Download Docker Image Artifact (versioned)
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image-versioned
-          path: .
-
-      - name: Load Docker Images
+      - name: Load Docker Image
         run: |
-          docker load -i image-latest.tar
-          docker load -i image-${{ needs.build.outputs.version }}.tar
+          docker load -i image.tar  # ✅ โหลด Image ที่ถูก Build มาใช้
 
-      - name: Run Trivy to Scan Docker Image (latest)
+      - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
         with:
           image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest'
           format: 'sarif'
-          output: 'trivy-image-latest-results.sarif'
+          output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      - name: Run Trivy to Scan Docker Image (versioned)
-        uses: aquasecurity/trivy-action@0.15.0
-        with:
-          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ needs.build.outputs.version }}'
-          format: 'sarif'
-          output: 'trivy-image-versioned-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy Scan Results (latest)
+      - name: Upload Trivy Scan Results to GitHub Security Tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-image-latest-results.sarif'
-
-      - name: Upload Trivy Scan Results (versioned)
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-image-versioned-results.sarif'
+          sarif_file: 'trivy-image-results.sarif'
 
   push_image:
     name: Push Docker Image to Docker Hub
     runs-on: ubuntu-latest
-    needs: security_scan
+    needs: security_scan  # ✅ รอให้ Trivy Scan เสร็จก่อนแล้วค่อย Push
 
     steps:
-      - name: Download Docker Image Artifact (latest)
-        uses: actions/download-artifact@v4
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4  # ✅ เปลี่ยนเป็น v4
         with:
-          name: docker-image-latest
+          name: docker-image
           path: .
 
-      - name: Download Docker Image Artifact (versioned)
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image-versioned
-          path: .
-
-      - name: Load Docker Images
+      - name: Load Docker Image
         run: |
-          docker load -i image-latest.tar
-          docker load -i image-${{ needs.build.outputs.version }}.tar
+          docker load -i image.tar  # ✅ โหลด Image ที่ถูกสแกน
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -158,5 +115,4 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ needs.build.outputs.version }}
-          echo "Pushed Docker Images: latest and ${{ needs.build.outputs.version }}"
+          echo "Pushed Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest"
