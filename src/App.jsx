@@ -9,6 +9,11 @@ function App() {
       width: "100vw", 
       backgroundColor: "#f8f9fa" 
     }}>
+
+      {/* test sonar */}
+      {/* <div>
+        <p style={{ color: "red" }}>This is old content that is not used anymore.</p>
+      </div> */}
       
       {/* Navbar */}
       <nav style={{ 
