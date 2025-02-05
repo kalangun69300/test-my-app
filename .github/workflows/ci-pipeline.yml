@@ -43,6 +43,9 @@ jobs:
     needs: sast_scan  # รอให้ SonarCloud สแกนเสร็จก่อน
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
       - name: Get Auto Version
         id: version
         run: |
@@ -71,10 +74,13 @@ jobs:
     needs: build  # รอให้ Docker Image Build เสร็จก่อน
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
         with:
-          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}'
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest'
           format: 'sarif'
           output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
