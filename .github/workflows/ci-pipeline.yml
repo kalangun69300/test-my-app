@@ -45,15 +45,38 @@ jobs:
 
     outputs:
       image_file: image.tar  # ✅ ส่งออกไฟล์ Image เพื่อใช้ข้าม Jobs
+      version: ${{ steps.version.outputs.VERSION }}  # ✅ ส่งเลขเวอร์ชันให้ Job อื่นใช้
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Get Auto Version
+        id: version
+        run: |
+          VERSION="v${{ github.run_number }}.0"  # ใช้ run_number ที่เพิ่มขึ้นทุกครั้ง
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT  # ✅ ส่งค่าออกเป็น output
+          echo "Next version: $VERSION"
+
       - name: Build Docker Image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest .
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
           docker save -o image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  # ✅ บันทึก Image ไว้
+          docker save -o image-${{ env.VERSION }}.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
+
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4  # ✅ ใช้ v4
+        with:
+          name: docker-image
+          path: image.tar
+
+      - name: Upload Docker Image Artifact (Versioned)
+        uses: actions/upload-artifact@v4  # ✅ อัปโหลดไฟล์ที่มีเลขเวอร์ชัน
+        with:
+          name: docker-image-versioned
+          path: image-${{ env.VERSION }}.tar
 
   security_scan:
     name: Trivy Security Scan
@@ -61,6 +84,16 @@ jobs:
     needs: build  # ✅ รอให้ Docker Image Build เสร็จก่อน
 
     steps:
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
+      - name: Load Docker Image
+        run: |
+          docker load -i image.tar  # ✅ โหลด Image ที่ถูก Build มาใช้
+
       - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
         with:
@@ -80,9 +113,22 @@ jobs:
     needs: security_scan  # ✅ รอให้ Trivy Scan เสร็จก่อนแล้วค่อย Push
 
     steps:
-      - name: Load Docker Image
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
+      - name: Download Docker Image Artifact (Versioned)
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-versioned
+          path: .
+
+      - name: Load Docker Images
         run: |
           docker load -i image.tar  # ✅ โหลด Image ที่ถูกสแกน
+          docker load -i image-${{ needs.build.outputs.version }}.tar
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -93,4 +139,5 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
-          echo "Pushed Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest"
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ needs.build.outputs.version }}
+          echo "Pushed Docker Images: latest and ${{ needs.build.outputs.version }}"
