@@ -56,7 +56,7 @@ jobs:
           docker save -o image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  # ✅ บันทึก Image ไว้
 
       - name: Upload Docker Image Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # ✅ เปลี่ยนเป็น v4
         with:
           name: docker-image
           path: image.tar
@@ -68,7 +68,7 @@ jobs:
 
     steps:
       - name: Download Docker Image Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4  # ✅ เปลี่ยนเป็น v4
         with:
           name: docker-image
           path: .
@@ -97,7 +97,7 @@ jobs:
 
     steps:
       - name: Download Docker Image Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4  # ✅ เปลี่ยนเป็น v4
         with:
           name: docker-image
           path: .
@@ -114,5 +114,4 @@ jobs:
 
       - name: Push Docker Image
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
-          echo "Pushed Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest"
+          d
