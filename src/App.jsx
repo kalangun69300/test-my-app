@@ -26,7 +26,7 @@ function App() {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "24px", cursor: "pointer" }}>☰</span>
-          <span>For Real Not Delicious Restaurant kaa</span>
+          <span>For Real Not Delicious Restaurant</span>
         </div>
       </nav>
 
