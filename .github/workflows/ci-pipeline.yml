@@ -62,23 +62,20 @@ jobs:
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest .
           docker tag ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
-          docker save -o /tmp/image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
-          docker save -o /tmp/image-${{ env.VERSION }}.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
+          docker save -o image-latest.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
+          docker save -o image-${{ env.VERSION }}.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }}
 
-      - name: Debug - List Files Before Upload
-        run: ls -lah /tmp
-
-      - name: Upload Docker Image Artifact
+      - name: Upload Docker Image Artifact (latest)
         uses: actions/upload-artifact@v4
         with:
-          name: docker-image
-          path: /tmp/image.tar
+          name: docker-image-latest
+          path: image-latest.tar
 
-      - name: Upload Docker Image Artifact (Versioned)
+      - name: Upload Docker Image Artifact (versioned)
         uses: actions/upload-artifact@v4
         with:
           name: docker-image-versioned
-          path: /tmp/image-${{ env.VERSION }}.tar
+          path: image-${{ env.VERSION }}.tar
 
   security_scan:
     name: Trivy Security Scan
@@ -86,31 +83,48 @@ jobs:
     needs: build
 
     steps:
-      - name: Download Docker Image Artifact
+      - name: Download Docker Image Artifact (latest)
         uses: actions/download-artifact@v4
         with:
-          name: docker-image
-          path: /tmp
+          name: docker-image-latest
+          path: .
 
-      - name: Debug - List Files After Download
-        run: ls -lah /tmp
+      - name: Download Docker Image Artifact (versioned)
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-versioned
+          path: .
 
-      - name: Load Docker Image
+      - name: Load Docker Images
         run: |
-          docker load -i /tmp/image.tar
+          docker load -i image-latest.tar
+          docker load -i image-${{ needs.build.outputs.version }}.tar
 
-      - name: Run Trivy to Scan Docker Image
+      - name: Run Trivy to Scan Docker Image (latest)
         uses: aquasecurity/trivy-action@0.15.0
         with:
           image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest'
           format: 'sarif'
-          output: 'trivy-image-results.sarif'
+          output: 'trivy-image-latest-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      - name: Upload Trivy Scan Results to GitHub Security Tab
+      - name: Run Trivy to Scan Docker Image (versioned)
+        uses: aquasecurity/trivy-action@0.15.0
+        with:
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ needs.build.outputs.version }}'
+          format: 'sarif'
+          output: 'trivy-image-versioned-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy Scan Results (latest)
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-image-results.sarif'
+          sarif_file: 'trivy-image-latest-results.sarif'
+
+      - name: Upload Trivy Scan Results (versioned)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-image-versioned-results.sarif'
 
   push_image:
     name: Push Docker Image to Docker Hub
@@ -118,25 +132,22 @@ jobs:
     needs: security_scan
 
     steps:
-      - name: Download Docker Image Artifact
+      - name: Download Docker Image Artifact (latest)
         uses: actions/download-artifact@v4
         with:
-          name: docker-image
-          path: /tmp
+          name: docker-image-latest
+          path: .
 
-      - name: Download Docker Image Artifact (Versioned)
+      - name: Download Docker Image Artifact (versioned)
         uses: actions/download-artifact@v4
         with:
           name: docker-image-versioned
-          path: /tmp
-
-      - name: Debug - List Files After Download
-        run: ls -lah /tmp
+          path: .
 
       - name: Load Docker Images
         run: |
-          docker load -i /tmp/image.tar
-          docker load -i /tmp/image-${{ needs.build.outputs.version }}.tar
+          docker load -i image-latest.tar
+          docker load -i image-${{ needs.build.outputs.version }}.tar
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
