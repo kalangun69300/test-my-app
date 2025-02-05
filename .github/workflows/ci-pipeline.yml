@@ -23,11 +23,6 @@ jobs:
         with:
           fetch-depth: 0  # จำเป็นสำหรับ SonarCloud เพื่อวิเคราะห์โค้ดได้ถูกต้อง
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
       - name: Run Linter (ESLint)
         run: npm run lint || true  # ป้องกัน CI ล้มเหลวหากมี warning
 
