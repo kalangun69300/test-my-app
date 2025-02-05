@@ -43,25 +43,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: sast_scan  # ✅ รอให้ SonarCloud สแกนเสร็จก่อน
 
-    outputs:
-      version: ${{ steps.version.outputs.VERSION }}  # ✅ ส่งค่า VERSION ออกไปให้ใช้ข้าม Jobs
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Get Auto Version
-        id: version
-        run: |
-          VERSION="v${{ github.run_number }}.0"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT  # ✅ ส่งค่าออกเป็น output
-          echo "Next version: $VERSION"
-
       - name: Build Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }} .
-          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ env.VERSION }} ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest .
+          echo "Built Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest"
 
   security_scan:
     name: Trivy Security Scan
@@ -75,7 +64,7 @@ jobs:
       - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
         with:
-          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ needs.build.outputs.version }}'
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest'
           format: 'sarif'
           output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -91,9 +80,6 @@ jobs:
     needs: security_scan  # ✅ รอให้ Trivy Scan เสร็จก่อนแล้วค่อย Push
 
     steps:
-      - name: Debug - Check VERSION
-        run: echo "VERSION=${{ needs.build.outputs.version }}"
-
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -102,5 +88,5 @@ jobs:
 
       - name: Push Docker Image
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:${{ needs.build.outputs.version }}
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
+          echo "Pushed Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest"
