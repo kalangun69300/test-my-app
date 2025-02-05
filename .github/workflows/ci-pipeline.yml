@@ -3,7 +3,7 @@ name: CI Pipeline (SAST, Docker Build, Trivy Scan, Push to Docker Hub, Deploy to
 on:
   push:
     branches:
-      - main  # ทำงานเมื่อ Push ไปที่ branch main
+      - main  
   pull_request:
     branches:
       - main
@@ -21,10 +21,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # จำเป็นสำหรับ SonarCloud เพื่อวิเคราะห์โค้ดได้ถูกต้อง
+          fetch-depth: 0 
 
       - name: Run Linter (ESLint)
-        run: npm run lint || true  # ป้องกัน CI ล้มเหลวหากมี warning
+        run: npm run lint || true  # ให้รันต่อหากมี warning
 
       - name: Run SonarCloud Scan
         env:

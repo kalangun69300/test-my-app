@@ -10,14 +10,6 @@ function App() {
       backgroundColor: "#f8f9fa" 
     }}>
 
-      {/* test sonar*/}
-      {/* const API_KEY = "12345-abcdef-67890"; */}
-
-
-      {/* test sonar 2 */}
-      {/* let userInput = "console.log('Injected Code!')"; */}
-      {/* eval(userInput); */}
-
       {/* Navbar */}
       <nav style={{ 
         width: "100%", 
