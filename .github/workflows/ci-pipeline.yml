@@ -114,4 +114,5 @@ jobs:
 
       - name: Push Docker Image
         run: |
-          d
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
+          echo "Pushed Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest"
