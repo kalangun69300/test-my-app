@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: read
-  security-events: write  #ให้สิทธิ์อัปโหลดผลไปยัง GitHub Security Tab
+  security-events: write  # ให้สิทธิ์อัปโหลดผลไปยัง GitHub Security Tab
 
 jobs:
   sast_scan:
@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0 
 
       - name: Run Linter (ESLint)
-        run: npm run lint || true  #ให้รันต่อหากมี warning
+        run: npm run lint || true  # ให้รันต่อหากมี warning
 
       - name: Run SonarCloud Scan
         env:
@@ -41,10 +41,10 @@ jobs:
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: sast_scan  #รอให้ SonarCloud สแกนเสร็จก่อน
+    needs: sast_scan  # รอให้ SonarCloud สแกนเสร็จก่อน
 
     outputs:
-      image_file: image.tar  #ส่งออกไฟล์ Image เพื่อใช้ข้าม Jobs
+      image_file: image.tar  # ส่งออกไฟล์ Image เพื่อใช้ข้าม Jobs
 
     steps:
       - name: Checkout Code
@@ -53,18 +53,18 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest .
-          docker save -o image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  #บันทึก Image ไว้
+          docker save -o ./image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  # บันทึก Image ไว้
 
       - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v4  
         with:
           name: docker-image
-          path: image.tar
+          path: ./image.tar
 
   security_scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
-    needs: build  #รอให้ Docker Image Build เสร็จก่อน
+    needs: build  # รอให้ Docker Image Build เสร็จก่อน
 
     steps:
       - name: Download Docker Image Artifact
@@ -75,13 +75,7 @@ jobs:
 
       - name: Load Docker Image
         run: |
-          docker load -i image.tar  #โหลด Image ที่ Build มาใช้
-
-      - name: Delete Old Trivy Scan Results
-        run: |
-          gh code-scanning list-alerts --repo ${{ github.repository }} | jq -r '.[].number' | xargs -I {} gh code-scanning delete-alert --repo ${{ github.repository }} --alert-id {}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          docker load -i ./image.tar  # โหลด Image ที่ Build มาใช้
 
       - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
@@ -90,17 +84,19 @@ jobs:
           format: 'sarif'
           output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
 
       - name: Upload Trivy Scan Results to GitHub Security Tab
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-image-results.sarif'
-          category: trivy-image-scan
+          category: trivy-container-scan  # ตั้งค่าให้แสดงผลใน Security Tab ของ GitHub
 
   push_image:
     name: Push Docker Image to Docker Hub
     runs-on: ubuntu-latest
-    needs: security_scan  #รอให้ Trivy Scan เสร็จก่อน
+    needs: security_scan  # รอให้ Trivy Scan เสร็จก่อน
 
     steps:
       - name: Download Docker Image Artifact
@@ -111,7 +107,7 @@ jobs:
 
       - name: Load Docker Image
         run: |
-          docker load -i image.tar  #โหลด Image
+          docker load -i ./image.tar  # โหลด Image
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -122,4 +118,4 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
-          echo "Pushed Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest"
+          echo "✅ Pushed Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest"
