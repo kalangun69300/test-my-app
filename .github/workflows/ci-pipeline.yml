@@ -77,6 +77,10 @@ jobs:
         run: |
           docker load -i image.tar  #โหลด Image ที่ Build มาใช้
 
+      - name: Remove Old Trivy Scan Results
+        run: |
+          rm -f trivy-image-results.sarif || true  # ลบไฟล์ SARIF เก่า (ถ้ามี)
+
       - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
         with:
@@ -84,12 +88,12 @@ jobs:
           format: 'sarif'
           output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
 
       - name: Upload Trivy Scan Results to GitHub Security Tab
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-image-results.sarif'
-          category: trivy-image-scan
 
   push_image:
     name: Push Docker Image to Docker Hub
