@@ -1,0 +1,110 @@
+pipeline {
+    agent any
+
+    environment {
+        SONAR_TOKEN = credentials('sonar-token')  // ใช้ Jenkins Credentials สำหรับ SonarCloud Token
+        DOCKERHUB_USERNAME = credentials('dockerhub-username')  // ใช้ Jenkins Credentials สำหรับ Docker Hub Username
+        DOCKERHUB_PASSWORD = credentials('dockerhub-password')  // ใช้ Jenkins Credentials สำหรับ Docker Hub Password
+    }
+
+    stages {
+        stage('SonarCloud SAST Scan') {
+            steps {
+                script {
+                    // Checkout Code
+                    checkout scm
+
+                    // Run Linter (ESLint)
+                    sh 'npm run lint || true'
+
+                    // Run SonarCloud Scan
+                    sh """
+                        npx sonarqube-scanner \
+                            -Dsonar.projectKey=kalangun69300_test-my-app \
+                            -Dsonar.organization=kalangun69300 \
+                            -Dsonar.sources=src \
+                            -Dsonar.host.url="https://sonarcloud.io" \
+                            -Dsonar.token="${SONAR_TOKEN}"
+                    """
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Checkout Code
+                    checkout scm
+
+                    // Build Docker Image
+                    sh """
+                        docker build -t ${DOCKERHUB_USERNAME}/test-my-app:latest .
+                        docker save -o image.tar ${DOCKERHUB_USERNAME}/test-my-app:latest
+                    """
+                    
+                    // Upload Docker Image Artifact
+                    archiveArtifacts allowEmptyArchive: true, artifacts: 'image.tar'
+                }
+            }
+        }
+
+        stage('Trivy Security Scan') {
+            steps {
+                script {
+                    // Download Docker Image Artifact
+                    copyArtifacts projectName: 'docker-image', filter: 'image.tar', target: '.'
+
+                    // Load Docker Image
+                    sh 'docker load -i image.tar'
+
+                    // Run Trivy Scan
+                    sh """
+                        docker run --rm \
+                            -v $(pwd):/app aquasec/trivy:0.15.0 \
+                            --input /app/image.tar \
+                            --format sarif \
+                            --output /app/trivy-image-results.sarif \
+                            --severity CRITICAL,HIGH,MEDIUM,LOW
+                    """
+
+                    // Upload Trivy Scan Results to GitHub Security Tab
+                    // Assume you have a separate task for uploading results in Jenkins (optional)
+                    // e.g., using GitHub API or GitHub plugin to upload the SARIF results
+                }
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    // Download Docker Image Artifact
+                    copyArtifacts projectName: 'docker-image', filter: 'image.tar', target: '.'
+
+                    // Load Docker Image
+                    sh 'docker load -i image.tar'
+
+                    // Login to Docker Hub
+                    sh """
+                        echo ${DOCKERHUB_PASSWORD} | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
+                    """
+
+                    // Push Docker Image to Docker Hub
+                    sh "docker push ${DOCKERHUB_USERNAME}/test-my-app:latest"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean up or post-deployment actions if necessary
+            echo 'Pipeline completed.'
+        }
+        success {
+            echo 'Pipeline succeeded.'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
+}

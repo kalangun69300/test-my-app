@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: read
-  security-events: write  #ให้สิทธิ์อัปโหลดผลไปยัง GitHub Security Tab
+  security-events: write  # ให้สิทธิ์อัปโหลดผลไปยัง GitHub Security Tab
 
 jobs:
   sast_scan:
@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0 
 
       - name: Run Linter (ESLint)
-        run: npm run lint || true  #ให้รันต่อหากมี warning
+        run: npm run lint || true  # ให้รันต่อหากมี warning
 
       - name: Run SonarCloud Scan
         env:
@@ -41,10 +41,7 @@ jobs:
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: sast_scan  #รอให้ SonarCloud สแกนเสร็จก่อน
-
-    outputs:
-      image_file: image.tar  #ส่งออกไฟล์ Image เพื่อใช้ข้าม Jobs
+    needs: sast_scan  # รอให้ SonarCloud สแกนเสร็จก่อน
 
     steps:
       - name: Checkout Code
@@ -53,7 +50,7 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest .
-          docker save -o image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  #บันทึก Image ไว้
+          docker save -o image.tar ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest  # บันทึก Image ไว้
 
       - name: Upload Docker Image Artifact
         uses: actions/upload-artifact@v4  
@@ -64,7 +61,7 @@ jobs:
   security_scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
-    needs: build  #รอให้ Docker Image Build เสร็จก่อน
+    needs: build  # รอให้ Docker Image Build เสร็จก่อน
 
     steps:
       - name: Download Docker Image Artifact
@@ -74,8 +71,7 @@ jobs:
           path: .
 
       - name: Load Docker Image
-        run: |
-          docker load -i image.tar  #โหลด Image ที่ Build มาใช้
+        run: docker load -i image.tar  # โหลด Image ที่ Build มาใช้
 
       - name: Run Trivy to Scan Docker Image
         uses: aquasecurity/trivy-action@0.15.0
@@ -93,7 +89,7 @@ jobs:
   push_image:
     name: Push Docker Image to Docker Hub
     runs-on: ubuntu-latest
-    needs: security_scan  #รอให้ Trivy Scan เสร็จก่อน
+    needs: security_scan  # รอให้ Trivy Scan เสร็จก่อน
 
     steps:
       - name: Download Docker Image Artifact
@@ -103,8 +99,7 @@ jobs:
           path: .
 
       - name: Load Docker Image
-        run: |
-          docker load -i image.tar  #โหลด Image
+        run: docker load -i image.tar  # โหลด Image
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -113,6 +108,6 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Push Docker Image
-        run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
-          echo "Pushed Docker Image: ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest"
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/test-my-app:latest
+
+  
